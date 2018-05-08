@@ -20,17 +20,14 @@ print("reading in raw data...")
 
 sovi <- read_sf(paste0(raw_path, "SVI2016_US.shp")) %>%
   rename_all(tolower) %>%
-  #filter(st_abbr == "NC") %>%
   st_transform(epsg102003)
 
-npl <- read_sf(paste0(raw_path, "superfund_shapefile/superfund_npl.shp")) %>%
+npls <- read_sf(paste0(raw_path, "superfund_shapefile/superfund_npl.shp")) %>%
   rename_all(tolower) %>%
-  #filter(state == "NC") %>%
   st_transform(epsg102003)
 
 cntys <- read_sf(paste0(raw_path, "cb_2017_us_county_20m.shp")) %>%
   rename_all(tolower) %>%
-  #filter(statefp == 37) %>%
   st_transform(epsg102003)
 
 print("processing data...")
@@ -38,7 +35,7 @@ print("processing data...")
 # Clip data
 
 cntys_filt <- cntys %>%
-  filter(sapply(st_intersects(cntys, st_buffer(npl, 5000)), 
+  filter(sapply(st_intersects(cntys, st_buffer(npls, 5000)), 
                 function(x) {length(x) != 0}))
 
 sovi_filt <- sovi %>%
@@ -51,4 +48,6 @@ print("writing data to `data` directory...")
 
 st_write(cntys_filt, paste0(data_path, "counties.shp"))
 st_write(sovi_filt, paste0(data_path, "sovi.shp"))
-st_write(npl, paste0(data_path, "npl.shp"))
+st_write(npls, paste0(data_path, "npl.shp"))
+
+rm(cntys_filt, sovi_filt)

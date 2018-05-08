@@ -1,0 +1,53 @@
+---
+title: "Project Journal"
+output: html_notebook
+author: Jacob J. Bukoski
+---
+
+---
+
+*A brief note:* This notebook documents the steps performed in the analysis of the NPL and SoVI datasets. The notebook is organized in chronological order with key progress, results and output incorporated as appropriate. As it is my first official notebook, my guess is it will be a learning process.
+
+---
+
+#### 2018-05-07
+
+*Organization*
+
+Initiated new github repository `~jbukoski/superfund` to formalize the structure and make code fully reproducible. The effort was motivated by a [blogpost](https://medium.com/outlier-bio-blog/a-quick-guide-to-organizing-data-science-projects-updated-for-2016-4cbb1e6dac71) on organizing projects in data science, which was in response to Nobel, 2009, PLoS Computational Biology. 
+
+In an effort to make the project 100% reproducible, the code pulls data from public, stable repositories using URL calls, and then will perform all processing and analyses as necessary. Much of the work performed today was in creating the directory structure and developing a plan for moving forward.
+
+*Analysis*
+
+In terms of analysis, I initiated scripts that both download the data formally (`get_data.R`), as well as a script (`process_data.R`) that does a first pass on processing the data to only those data relevant for the analysis (i.e., clipped all datasets to counties that correspond to NPL sites).
+
+*Reading*
+
+Picked up Dorceta Taylor's "Toxic Communities: Environmental Racism, Industrial Pollution, and Residential Mobility". It is excellent thus far.
+
+---
+
+#### 2018-05-08
+
+*Organization*
+
+As a follow-up to yesterday, I elected to devote time to reintroducing myself to Rocker and setting up a Rocker container for the project. Here I was referencing two of Carl Boettigers paper (Boettiger 2015, ACM; Boettiger & Eddelbuettel, 2017, The R Journal) as well as his numerous helpful Rocker GitHub repo pages.
+
+I set up a container that builds off of the prebuilt `rocker/geospatial:3.4.2` image. If I've done things right, the project should now be reproducible in full, even as I move forward with it. A note for myself, but the Rocker container ID is `782f79c8859a`.
+
+*Analysis*
+
+I integrated the `helper_funcs.R` script that I developed for the DS421 capstone project into the GitHub repo. In moving forward with the analysis, I will need to rework the functions to omit all consideration of the `flood_rank` variable given that I (we) are no longer concerned with storm surge. I am also restructuring the functions such that each method may be applied by a single function rather than all three methods employed via one. Should I choose, I can then write a larger function that calls all three individual functions.
+
+As a first pass on the data, I subsetted all datasets to North Carolina. I ran the UHC method on the data for all NPL sites, and then began to sample random points within the counties thinking that some sort of monte carlo method to examine the distribution of vulnerability would be an interesting comparison against the sites.
+
+I am now rethinking this approach as in truth we have the full data for the county (i.e., the population). A perhaps more robust approach would be calculating the mean SoVI values for the state, and conducting a one-sided t-test to test difference in mean between the NPL sites and the state as a whole. Indeed, in doing that, a statistically significant different at the < 0.001 level was found.
+
+This begs the question of what the most appropriate comparisons for the NPL-associated vs. non-NPL-associated data are. Some thoughts at present:
+
+  1. One-sided t-tests:
+    * All NPL sites ~ mean for all blocks in counties with NPL sites?
+    * All NPL sites ~ mean for all blocks in US?
+  2. Two-sided t-test:
+    * Some form of Monte Carlo sampling of points within counties to extract distribution of randomly located points (i.e., baseline) versus communities in proximity to NPLs?

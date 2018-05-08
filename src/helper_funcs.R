@@ -1,5 +1,5 @@
-
-# A function that uses a sparse geometric predicate binary (using st_intersects). The function is use with `lmap` across the SGPB to summarize census block SOVI data.
+# A function that uses a sparse geometric predicate binary (using st_intersects). 
+# The function is used with `lmap` across the SGPB to summarize census block SOVI data.
 
 summarize_data <- function(criteria, blocks, aa = FALSE) {
   
@@ -72,6 +72,40 @@ sf_to_df <- function(sf_object) {
   sf_object$site_id <- as.numeric(sf_object$site_id)
   
   return(sf_object)
+  
+}
+
+# Summarizes SoVI data based on the Unit-Hazard Coincidence method
+
+generate_uhc <- function(sovi_data, sites_data) {
+  
+  m1_dat <- st_join(sites_data, sovi_data)
+  
+  m1_binary_blcks <- sapply(st_contains(sovi_data, sites_data), function(x) {length(x) != 0})
+  m1_binary <- sapply(st_within(sites_data, sovi_data), function(x) {length(x) != 0})
+  
+  m1_blcks <- sovi_data %>%
+    filter(m1_binary_blcks)
+  
+  m1_sovi <- m1_dat %>%
+    filter(m1_binary) %>%
+    mutate(pop_wgtd_rpl_themes = e_totpop * rpl_themes,
+           pop_wgtd_rpl_t1 = e_totpop * rpl_theme1,
+           pop_wgtd_rpl_t2 = e_totpop * rpl_theme2,
+           pop_wgtd_rpl_t3 = e_totpop * rpl_theme3,
+           pop_wgtd_rpl_t4 = e_totpop * rpl_theme4,
+           max_rpl_t1 = round(rpl_theme1, 4),
+           max_rpl_t2 = round(rpl_theme2, 4),
+           max_rpl_t3 = round(rpl_theme3, 4),
+           max_rpl_t4 = round(rpl_theme4, 4),
+           max_rpl_themes = round(rpl_themes, 4)) 
+  
+  # %>%
+  #   dplyr::select(site_id, name, county = county.x, state = state.x, e_totpop,
+  #                 matches("rpl_theme*"), matches("pop_wgtd_rpl_t*"),
+  #                 matches("max_rpl*"))
+  
+  return(m1_sovi)
   
 }
 
