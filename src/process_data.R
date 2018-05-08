@@ -3,10 +3,7 @@
 library(tidyverse)
 library(sf)
 
-# Define paths to raw data
-
-#root_path <- dirname(dirname(rstudioapi::getSourceEditorContext()$path))
-
+# Define paths
 
 raw_path <- "./raw/"
 src_path <- "./src/"
