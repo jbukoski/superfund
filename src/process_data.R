@@ -5,8 +5,8 @@ library(sf)
 
 # Define paths to raw data
 
-#root_path <- dirname(dirname(rstudioapi::getSourceEditorContext()$path))
-root_path <- dirname(dirname(sys.frame(1)$ofile))
+#root_path <- dirname(dirname(rstudioapi::getSourceEditorContext()$path))    # root_path if run via RStudio
+root_path <- dirname(dirname(sys.frame(1)$ofile))    # root_path if run via command line
 
 raw_path <- paste0(root_path, "/raw/")
 src_path <- paste0(root_path, "/src/")
