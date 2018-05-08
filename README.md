@@ -39,6 +39,7 @@ To regenerate output, simply delete the relevant files and re-run `runall.sh`.
 5. Compare NPL SoVI data vs. non-NPL points data
 6. Repeat for all years of SoVI data; examine directional trends in SoVI at NPL vs. non-NPL sites
 
+---
 
 #### Notes:
 
@@ -48,3 +49,4 @@ To regenerate output, simply delete the relevant files and re-run `runall.sh`.
     * instantiate container with: `sudo docker run -d -p 8787:8787 rocker/geospatial:3.4.2`
     * uses the `rocker/geospatial:3.4.2` image as a base container, with additional libraries (`tidyverse`, etc.) installed as needed
     * instantiating the container and running the code (including data downloads) should make the code wholly-reproducible
+    * needed to configure git email and name locally to push
