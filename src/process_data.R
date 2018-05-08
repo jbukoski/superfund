@@ -5,12 +5,17 @@ library(sf)
 
 # Define paths to raw data
 
+<<<<<<< HEAD
 #root_path <- dirname(dirname(rstudioapi::getSourceEditorContext()$path))    # root_path if run via RStudio
 root_path <- dirname(dirname(sys.frame(1)$ofile))    # root_path if run via command line
+=======
+#root_path <- dirname(dirname(rstudioapi::getSourceEditorContext()$path))
+>>>>>>> a76ebdbbfe6c54ee7f8bcf68f036449a6971500e
 
-raw_path <- paste0(root_path, "/raw/")
-src_path <- paste0(root_path, "/src/")
-data_path <- paste0(root_path, "/data/")
+
+raw_path <- "./raw/"
+src_path <- "./src/"
+data_path <- "./data/"
 
 # Define equal area projection
 
