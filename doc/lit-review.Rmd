@@ -1,0 +1,37 @@
+---
+title: "Literature Review"
+author: "Jacob J. Bukoski"
+date: "May 10, 2018"
+output: html_document
+bibliography: refs.bib
+---
+
+## Literature review
+
+---
+
+#### Stretsky and Hogan, 1998 [@stretesky1998environmental]
+
+#### Reardon and O'Sullivan, 2004 [@reardon2004measures]
+
+#### Downey, 2006 [@downey2006using]
+
+#### Mohai and Saha, 2006 [@mohai2006reassessing]
+
+This seminal (200+ citations) tests shifts in demographic and socioeconomic variables for UHC versus distance based methods. This appears to be a baseline approach for the SoVI study. Of key note are:
+
+  1. They employ two approaches, one that is toxic site-wise (i.e., considering the toxic site as the centroid of the buffered neighborhood) and one that is census tract-wise (i.e., using the centroid of the census track as the bueffered neighborhood). They claim the second is more conservative but I don't fully understand why.
+  2. The anonymous reviewers suggest an additional distance-based approach that might be worth considering in note #5 at bottom of page 396.
+  3. They use logistic regression to test presence/lack of a contaminated site within census blocks as a function of demographic and socioeconomic variables. It seems a number of studies employ regression analysis to examine the factors here as well.
+  
+#### Bevc et al., 2007 [@bevc2007environmental]
+  
+#### Lee et al., 2008 [@lee2008beyond]
+
+#### Hong et al., 2014 [@hong2014implementing]
+
+#### Kramar et al., 2018 [@kramar2018spatially]
+
+---
+
+`r if (knitr:::is_html_output()) '### References {-}'`
