@@ -12,25 +12,67 @@ bibliography: refs.bib
 
 #### Stretsky and Hogan, 1998 [@stretesky1998environmental]
 
+</br>
+
 #### Reardon and O'Sullivan, 2004 [@reardon2004measures]
+
+</br>
 
 #### Downey, 2006 [@downey2006using]
 
-#### Mohai and Saha, 2006 [@mohai2006reassessing]
+</br>
+
+#### Mohai and Saha, 2006
+
+[@mohai2006reassessing]
 
 This seminal (200+ citations) tests shifts in demographic and socioeconomic variables for UHC versus distance based methods. This appears to be a baseline approach for the SoVI study. Of key note are:
 
   1. They employ two approaches, one that is toxic site-wise (i.e., considering the toxic site as the centroid of the buffered neighborhood) and one that is census tract-wise (i.e., using the centroid of the census track as the bueffered neighborhood). They claim the second is more conservative but I don't fully understand why.
   2. The anonymous reviewers suggest an additional distance-based approach that might be worth considering in note #5 at bottom of page 396.
   3. They use logistic regression to test presence/lack of a contaminated site within census blocks as a function of demographic and socioeconomic variables. It seems a number of studies employ regression analysis to examine the factors here as well.
+
+</br>
   
-#### Bevc et al., 2007 [@bevc2007environmental]
-  
+#### Bevc et al., 2007 
+
+[@bevc2007environmental]
+
+First study I encountered that gave an overview of distance based (UHC, BI, AA) methods. They focus specifically on one NPL site in Florida, and also examine a plume model analysis in terms of exposure for surrounding populations. This is an excellent read and provides important insight at the site-level, but the approach they take with the plume analysis may not be feasible at a national scale/scope.
+
+</br>
+
 #### Lee et al., 2008 [@lee2008beyond]
+
+Impressive study that examines the limitations of using census tract level data (the level at which the SoVI data exists) for characterizing demographics and socioeconomics within neighborhoods. Interestingly, the authors do not cite Mohai and Saha's work, nor do they explicitly discuss the distance-based approaches (UHC, BI, AA) they employ.
+
+It seems that there are two very similar lines of research, but perhaps due to terminology (Lee et al., 2008 is housed within "segregation" studies) they do not overlap?
+
+The framework that acts as the foundational literature for their work is that of Farley and Frey's structural-ecological perspective (1994). Farley and Frey's framework employs an aspatial approach that seeks to explain variation in segregation as a function of structural characteristics (population size, region, functional specialization, and minority group size).
+
+They take a fully spatial approach by using a biweight kernel function and examine data from the perspective of the individual community (i.e., across arbitrary census transect boundaries). Brief overview of their methodological steps:
+
+  1. Superimpose very high resolution 50x50m raster on census data.
+  2. Estimate pixel-based demog. and soc. eco. data using census blocks
+  3. Apply a smoothing function to the raster
+  4. Compute local environment of each cell using biweight kernel function at varying fixed radii.
+  5. They then use segregation measures against the total metropolitan characteristics and at each of the fixed scales (500 - 4000 m) to examine micro and macro-segregation.
+  
+*Note* - David O'Sullivan the lab author is at UCB Geog. Might be worth talking to him and seeing if it makes sense to employ this method.
+
+  * Set each of the NPL sites as the center of the egocentric community and compare against boundary intersected census block params at same scale?
+
+</br>
 
 #### Hong et al., 2014 [@hong2014implementing]
 
+</br>
+
 #### Kramar et al., 2018 [@kramar2018spatially]
+
+Read already... fill in later.
+
+</br>
 
 ---
 
