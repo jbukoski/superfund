@@ -51,3 +51,17 @@ This begs the question of what the most appropriate comparisons for the NPL-asso
     * All NPL sites ~ mean for all blocks in US?
   2. Two-sided t-test:
     * Some form of Monte Carlo sampling of points within counties to extract distribution of randomly located points (i.e., baseline) versus communities in proximity to NPLs?
+
+---
+
+#### 2018-05-09
+
+I reworked all of the functions such that the `generate_all()` function builds off of each of the method specific functions.
+
+Next steps/things to think about further:
+
+  1. Metric to text consistency across methods/values.
+  2. Use OSM data to identify houses within census blocks and obtain more realistic areal apportionment values.
+  3. Write code to compile SoVI data against each of the methods (i.e., baseline data).
+  4. Begin thinking about visualizations of the data to compare the two datasets.
+

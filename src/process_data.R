@@ -3,11 +3,11 @@
 library(tidyverse)
 library(sf)
 
-# Define paths
+# Define paths (as to be run from the notebook.Rmd file)
 
-raw_path <- "./raw/"
-src_path <- "./src/"
-data_path <- "./data/"
+raw_path <- "../raw/"
+src_path <- "../src/"
+data_path <- "../data/"
 
 # Define equal area projection
 
@@ -23,7 +23,14 @@ sovi <- read_sf(paste0(raw_path, "SVI2016_US.shp")) %>%
   st_transform(epsg102003)
 
 npls <- read_sf(paste0(raw_path, "superfund_shapefile/superfund_npl.shp")) %>%
-  rename_all(tolower) %>%
+  rename_all(tolower)
+
+# Fix bad geometry for Ore Knob Mine, NC
+
+sfc = st_sfc(st_point(c(-81.323889, 36.408611)))
+st_geometry(npls[npls$site_id == "0409895",]) <- st_geometry(sfc)
+
+npls <- npls %>%
   st_transform(epsg102003)
 
 cntys <- read_sf(paste0(raw_path, "cb_2017_us_county_20m.shp")) %>%

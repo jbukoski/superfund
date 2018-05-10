@@ -7,16 +7,14 @@ summarize_data <- function(criteria, blocks, aa = FALSE) {
   # blocks: census blocks with SOVI data
   
   criteria_df <- unlist(criteria)
-  
   site_index <- criteria_df[length(criteria_df)]
-  # criteria_df <- criteria_df[1:length(criteria_df)-1]
   
   if(aa == TRUE) {
   
     dat <- blocks %>%
       mutate(rn = row_number()) %>%
       filter(rn %in% criteria_df) %>%
-      summarise(site_index = site_index,
+      summarise(site_index = site_index, 
                 avg_rpl_themes = mean(rpl_themes),
                 sum_e_totpop = round(sum(e_totpop * perc_itrsct/100), 0),
                 pop_wgtd_rpl_themes = round(sum((e_totpop * perc_itrsct/100) * rpl_themes), 0),
@@ -57,25 +55,25 @@ summarize_data <- function(criteria, blocks, aa = FALSE) {
   
 }
 
-# Function to convert simple features objects to data frames. Tricky part that does not make this easy to handle is specifying the geometry as NULL. The function also selects relevant
-# data from the SOVI objects and drops repeated columns (name, county, state, ...)
+# Function to convert simple features objects to data frames. 
+# Tricky part that does not make this easy to handle is specifying the geometry as NULL. 
+# The function also selects relevant data from the SOVI objects and drops 
+# repeated columns (name, county, state, ...).
 
 sf_to_df <- function(sf_object) {
   
   st_geometry(sf_object) <- NULL
   
   sf_object <- sf_object %>%
-    dplyr::select(site_id, matches("avg_rpl_themes*"),
-           matches("sum_e_totpop*"), matches("pop_wgtd_rpl_themes*"),
-           matches("pop_wgtd_f_t*"))
-  
-  sf_object$site_id <- as.numeric(sf_object$site_id)
-  
+    dplyr::select(site_id, matches("avg_rpl_themes*"), matches("sum_e_totpop*"),
+                  matches("pop_wgtd_rpl_themes*"), matches("pop_wgtd_f_t*")) %>%
+    mutate(site_id = as.numeric(site_id))
+
   return(sf_object)
   
 }
 
-# Summarizes SoVI data based on the Unit-Hazard Coincidence method
+# Summarizes SoVI data based on the Unit-Hazard Coincidence method.
 
 generate_uhc <- function(sovi_data, sites_data) {
   
@@ -98,98 +96,165 @@ generate_uhc <- function(sovi_data, sites_data) {
            max_rpl_t2 = round(rpl_theme2, 4),
            max_rpl_t3 = round(rpl_theme3, 4),
            max_rpl_t4 = round(rpl_theme4, 4),
-           max_rpl_themes = round(rpl_themes, 4)) 
-  
-  # %>%
-  #   dplyr::select(site_id, name, county = county.x, state = state.x, e_totpop,
-  #                 matches("rpl_theme*"), matches("pop_wgtd_rpl_t*"),
-  #                 matches("max_rpl*"))
-  
+           max_rpl_themes = round(rpl_themes, 4),
+           sum_e_totpop = e_totpop,
+           buffer = NA,
+           method = "uhc") 
+
   return(m1_sovi)
   
 }
 
-# Full function that generates the sites data, can run with different buffer sizes.
+# Summarizes SoVI data based on the Buffered Intersection method.
 
-generate_data <- function(sovi_data, sites_data, buffer) {
+generate_bi <- function(sovi_data, sites_data, buffer) {
+  
+  m2_return <- data.frame()
+  
+  for(i in 1:length(buffer)) {
+    
+    buff <- buffer[i]
+    
+    m2_sgbp <- sites_data %>%
+      st_buffer(buffer[i]) %>%
+      st_intersects(sovi_data)
+    
+    for(i in 1:length(m2_sgbp)) { 
+      m2_sgbp[[i]] = c(m2_sgbp[[i]], i) 
+      }
+    
+    m2_summary <- m2_sgbp %>%
+      lmap(summarize_data, blocks = sovi_data)
+    
+    sovi_itrsct <- m2_summary[[1]]
+    
+    for(i in 2:length(m2_summary)) { 
+      sovi_itrsct <- rbind(sovi_itrsct, m2_summary[[i]]) 
+      }
+    
+    sovi_1km_df <- sovi_itrsct
+    st_geometry(sovi_1km_df) = NULL 
+    
+    m2_sovi <- sites_data %>%
+      as.data.frame() %>%
+      mutate(site_index = row_number(),
+             buffer = buff,
+             method = "bi") %>%
+      left_join(sovi_1km_df, by = "site_index") %>%
+      st_sf()
+    
+    m2_return <- rbind(m2_return, as.data.frame(m2_sovi))
+  
+  }
+    
+  m2_return %>%
+    st_sf() %>%
+    return()
+  
+}
 
-  # Method 1 -- Unit-Hazard Coincidence
+# A helper function to generate the M3: Areal Apportionment data correctly.
+# This function and "generate_aa()" work together to build the aa data.
+
+m3_dat <- function(sovi_data, site, buffer) {
   
-  m1_dat <- st_join(sites_data, sovi_data)
+  m3_return <- data.frame()
   
-  m1_binary_blcks <- sapply(st_contains(sovi_data, sites_data), function(x) {length(x) != 0})
-  m1_binary <- sapply(st_within(sites_data, sovi_data), function(x) {length(x) != 0})
-  
-  m1_blcks <- sovi_data %>%
-    filter(m1_binary_blcks)
-  
-  m1_sovi <- m1_dat %>%
-    filter(m1_binary) %>%
-    mutate(pop_wgtd_rpl_themes = e_totpop * rpl_themes,
-           pop_wgtd_rpl_t1 = e_totpop * rpl_theme1,
-           pop_wgtd_rpl_t2 = e_totpop * rpl_theme2,
-           pop_wgtd_rpl_t3 = e_totpop * rpl_theme3,
-           pop_wgtd_rpl_t4 = e_totpop * rpl_theme4,
-           max_rpl_t1 = round(rpl_theme1, 4),
-           max_rpl_t2 = round(rpl_theme2, 4),
-           max_rpl_t3 = round(rpl_theme3, 4),
-           max_rpl_t4 = round(rpl_theme4, 4),
-           max_rpl_themes = round(rpl_themes, 4)) %>%
-    dplyr::select(site_id, name, county.x, state.x, flood_rank, e_totpop, 
-                  rpl_themes, pop_wgtd_rpl_themes, matches("pop_wgtd_rpl_t*"),
-                  matches("max_rpl*")) %>%
-    rename(sum_e_totpop = e_totpop, 
-           avg_rpl_themes = rpl_themes)
-  
-  # Method 2 -- Buffered Intersection
-  
-  m2_sgbp <- sites_data %>%
-    st_buffer(buffer) %>%
-    st_intersects(sovi_data)
-  
-  for(i in 1:length(m2_sgbp)) {
-    m2_sgbp[[i]] = c(m2_sgbp[[i]], i)
+  for(i in 1:length(buffer)) {
+    
+    buff <- buffer[i]
+    
+    areal_appor <- sovi_data %>%
+      mutate(area_m2 = st_area(.)) %>%
+      st_intersection(st_buffer(site, buff)) %>%
+      st_cast("MULTIPOLYGON") %>%
+      mutate(area_m2 = as.numeric(gsub(" m^2", "", area_m2)),
+             int_area_m2 = as.numeric(gsub(" m^2", "", st_area(.))),
+             perc_itrsct = round(100 * int_area_m2 / area_m2, 4),
+             wgtd_pop = round(e_totpop * perc_itrsct/100, 0))
+    
+    m3_sovi <- areal_appor
+    
+    m3_sgbp <- site %>%
+      st_buffer(buff) %>%
+      st_intersects(m3_sovi)
+    
+    m3_summary <- m3_sgbp %>%
+      lmap(summarize_data, blocks = m3_sovi, aa = TRUE) %>%
+      extract2(1) %>%
+      st_set_geometry(NULL)
+    
+    m3_sovi <- site %>%
+      as.data.frame() %>%
+      cbind(m3_summary) %>%
+      mutate(method = "aa",
+             buffer = buffer[i],
+             method = "aa") %>%
+      st_sf()
+    
+    m3_return <- rbind(m3_return, as.data.frame(m3_sovi))
+    
   }
   
-  m2_summary <- m2_sgbp %>%
-    lmap(summarize_data, blocks = sovi_data)
+  m3_return %>%
+    st_sf() %>%
+    return()
   
-  sovi_itrsct <- m2_summary[[1]]
-  for(i in 2:length(m2_summary)) {
-    sovi_itrsct <- rbind(sovi_itrsct, m2_summary[[i]])
+}
+
+
+# Summarizes SoVI data based on the Areal Apportionment method.
+# Performs a loop function over each of the sites with the m3_dat function to
+# avoid spatial overlap of multiple NPLs in a block.
+
+generate_aa <- function(sovi_data, sites_data, buffer) {
+  
+  m3_sovi <- m3_dat(sovi_data, sites_data[1,], buffer)
+  
+  for(i in 2:nrow(sites_data)) {
+    
+    m3_sovi <- m3_sovi %>% 
+      rbind(m3_dat(sovi_data, sites_data[i,], buffer)) 
+    
   }
+
+  return(m3_sovi)
   
-  sovi_1km_df <- sovi_itrsct
-  st_geometry(sovi_1km_df) = NULL 
+}
+
+# Full function that generates the sites data for m1 and m2, can run with different buffer sizes.
+
+generate_all <- function(sovi_data, sites_data, buffer) {
+
+  print("generating uhc data...")
+  m1_sovi <- generate_uhc(sovi_data, sites_data)
   
-  m2_sovi <- sites_data %>%
-    as.data.frame() %>%
-    mutate(site_index = row_number()) %>%
-    left_join(sovi_1km_df, by = "site_index")
+  print("generating bi data...")
+  m2_sovi <- generate_bi(sovi_data, sites_data, buffer)
   
-# Join the data
+  print("generating aa data...")
+  m3_sovi <- generate_aa(sovi_data, sites_data, buffer)
+  
+  # Get column names to jive
+  
+  print("joining data...")
   
   m2_sovi <- m2_sovi %>%
     select(colnames(m2_sovi)[colnames(m2_sovi) %in% colnames(m1_sovi)])
 
-  sites_sovi <- m1_sovi %>%
-    left_join(m2_sovi, by = "site_id")
-
-  tidy_sites_sovi <- sites_sovi %>%
-    select(site_id, name = name.x, county = county.x, state = state.x, 
-           flood_rank = flood_rank.x, geometry = geometry.x, 
-           matches("pop_wgtd_rpl*"), matches("sum_e_totpop*"),
-           matches("max_rpl*")) %>%
-    gather(method, value, -site_id, -name, -county, -state, -flood_rank, -geometry) %>%
-    separate(method, c("metric", "method"), sep = "[.]") %>%
-    spread(metric, value) %>%
-    mutate(method = ifelse(method == "x", "uhc", "bi"),
-           buffer = ifelse(method == "uhc", NA, buffer),
-           pop_wgtd_rpl_themes = round(ifelse(pop_wgtd_rpl_themes < 0, NA, pop_wgtd_rpl_themes), 0),
-           sum_e_totpop = round(sum_e_totpop, 0)) %>%
-     arrange(name)
+  m3_sovi <- m3_sovi %>%
+    select(colnames(m3_sovi)[colnames(m3_sovi) %in% colnames(m1_sovi)])
   
-  return(tidy_sites_sovi)
+  m1_sovi <- m1_sovi %>%
+    select(colnames(m1_sovi)[colnames(m1_sovi) %in% colnames(m2_sovi)])
+  
+  # Join the data
+  
+  sites_sovi <- m1_sovi %>%
+    rbind(m2_sovi, m3_sovi) %>%
+    arrange(name, desc(method), buffer)
+
+  return(sites_sovi)
 
 }
 
@@ -255,61 +320,4 @@ m3_polys <- function(sovi_data, sites_data, buffer) {
   
 }
 
-# A helper function to generate the M3: Areal Apportionment data correctly
 
-m3_dat <- function(sovi_data, site, buffer) {
-  
-  areal_appor <- sovi_data %>%
-    mutate(area_m2 = st_area(.)) %>%
-    st_intersection(st_buffer(site, buffer)) %>%
-    st_cast("MULTIPOLYGON") %>%
-    mutate(area_m2 = as.numeric(gsub(" m^2", "", area_m2)),
-           int_area_m2 = as.numeric(gsub(" m^2", "", st_area(.))),
-           perc_itrsct = round(100 * int_area_m2 / area_m2, 4),
-           wgtd_pop = round(e_totpop * perc_itrsct/100, 0))
-  
-  m3_sovi <- areal_appor
-  
-  m3_sgbp <- site %>%
-    st_buffer(buffer) %>%
-    st_intersects(m3_sovi)
-  
-  m3_summary <- m3_sgbp %>%
-    lmap(summarize_data, blocks = m3_sovi, aa = TRUE) %>%
-    extract2(1) %>%
-    st_set_geometry(NULL)
-  
-  m3_sovi <- site %>%
-    as.data.frame() %>%
-    cbind(m3_summary) %>%
-    mutate(method = "aa",
-           buffer = buffer) %>%
-    st_as_sf()
-  
-  return(m3_sovi)
-  
-}
-
-# A helper function to loop over each site in the sites SF object. The function uses m3_dat inside a for loop.
-
-generate_aa <- function(sovi_data, sites_data, buffer) {
-  
-  m3_sovi <- sites_data %>%
-    filter(site_id == "NA")
-  
-  for(i in 1:nrow(sites_data)) {
-    
-    m3_sovi <- m3_sovi %>% 
-      rbind(m3_dat(sovi_data, sites_data[i,], buffer)) 
-    
-  }
-  
-  m3_sovi <- m3_sovi %>%
-    select(site_id, name, county, state, flood_rank, method, buffer, 
-           geometry, sum_e_totpop, pop_wgtd_rpl_themes, pop_wgtd_rpl_t1, 
-           pop_wgtd_rpl_t2, pop_wgtd_rpl_t3, pop_wgtd_rpl_t4, 
-           matches("max_rpl*"))
-  
-  return(m3_sovi)
-  
-}
