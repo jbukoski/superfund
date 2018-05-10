@@ -1,0 +1,148 @@
+---
+title: "Analysis Notebook"
+output: html_notebook
+author: Jacob J. Bukoski
+---
+
+---
+
+A full documentation of the analysis, organized chronologically. Pulls heavily from scripts housed within the `src` directory.
+
+---
+
+#### 2018-05-07
+
+Wrote scripts to pull data from stable repositories, as well as process the data. Processing the data at this point consists of clipping the SoVI data to those census blocks that exist within a 5 km radius of the counties in which NPL sites exist.
+
+```{r, eval = FALSE}
+
+# Downloading the data
+
+source("../src/get_data.R")
+
+```
+
+```{r, eval = FALSE, message = FALSE, warning = FALSE}
+# Preprocessing the data
+
+source("../src/process_data.R")
+
+```
+
+---
+
+#### 2018-05-08
+
+Beginning actual analysis.
+
+Set-up a bit by importing necessary libraries, specifying input and output directories, and sourcing the helper functions.
+
+```{r, warning = FALSE, message = FALSE}
+library(tidyverse)
+library(sf)
+library(magrittr)
+
+source("../src/helper_funcs.R")
+
+in_dir <- "../data/"
+out_dir <- "../results/"
+```
+
+The processed data is loaded in from the `./data/` directory.
+
+```{r}
+npls <- st_read(paste0(in_dir, "npl.shp")) %>%
+  filter(state == "NC")
+
+sovi <- st_read(paste0(in_dir, "sovi.shp")) %>%
+  filter(st_abbr == "NC") %>%
+  mutate(rpl_theme1 = ifelse(rpl_theme1 == -999, NA, rpl_theme1),
+         rpl_theme2 = ifelse(rpl_theme2 == -999, NA, rpl_theme2),
+         rpl_theme3 = ifelse(rpl_theme3 == -999, NA, rpl_theme3),
+         rpl_theme4 = ifelse(rpl_theme4 == -999, NA, rpl_theme4),
+         rpl_themes = ifelse(rpl_themes == -999, NA, rpl_themes))
+
+cntys <- st_read(paste0(in_dir, "counties.shp")) %>%
+  filter(statefp == 37)
+```
+
+Unsure of the best way to "test" NPL vs. non-NPL SoVI data. Original thought was to sample randomly within the counties and then use a Monte Carlo approach to sample the "baseline" distribution of SoVI. Realizing now that actually we can simply generate "baseline" for entire county.
+
+Regardless, I do simple point sampling as well as generate the mean value for the whole SoVI census block dataset to test the NPL site SoVI data against.
+
+```{r}
+test_pts <- st_sample(cntys, nrow(npls)) %>%
+  st_sf()
+
+mean_rpl_themes <- mean(sovi$rpl_themes, na.rm = TRUE)
+```
+
+Using the `generate_uhc()` helper function, compute the SoVI scores for the Unit-Hazard Coincidence method.
+
+```{r}
+npls_uhc <- generate_uhc(sovi, npls)
+test_pts_uhc <- generate_uhc(sovi, test_pts)
+```
+
+
+After reworking the data a bit to extract the summary variable `rpl_themes`, conduct a one-sided t-test against the mean `rpl_themes` score for the state as a whole.
+
+```{r}
+# Rework data and summarize to examine differences
+
+npls_uhc <- npls_uhc %>%
+  mutate(dataset = "npls") %>%
+  select(dataset, rpl_themes)
+
+test_pts_uhc <- test_pts_uhc %>%
+  mutate(dataset = "test_pts") %>%
+  select(dataset, rpl_themes)
+
+t_test_data <- rbind(npls_uhc, test_pts_uhc) %>%
+  filter(!is.na(rpl_themes)) %>%
+  st_set_geometry(NULL) %>%
+  as_data_frame()
+
+# Run a one sided t-test to test the difference between the two
+
+(t.test(t_test_data$rpl_themes, mu = mean_rpl_themes))
+```
+
+As of now, I haven't taken the time to do Monte Carlo point sampling within the counties as I am unsure whether or not this is the best approach. At present I think the next steps should be:
+
+  1. Build out code for the other methods (know how they will be structured for NPL sites).
+  2. Begin thinking about how to assess SoVI over time.
+
+---
+
+#### 2018-05-09
+
+I rebuilt the helper functions such that individual functions exist for each of the methods to summarize the census block data:
+
+  1. `generate_uhc()` - Unit-Hazard Coincidence
+  2. `generate_bi()` - Buffered Intersection
+  3. `generate_aa()` - Areal Apportionment; uses `m3_dat()`
+
+I then built a driver function that runs the above three functions and joins the data for the sites:
+
+  1. `generate_all()`
+  
+I also rebuilt all of the functions such that the `buffer` input variable can be a vector of values rather than a single value. This allows for the entire dataset to be generated using a simple one-line call.
+
+
+```{r, message = FALSE, warning = FALSE}
+start <- Sys.time()
+
+buffers <- seq(1000, 5000, 1000)
+sovi_npls <- generate_all(sovi, npls, buffers)
+
+end <- Sys.time()
+runtime <- end - start
+```
+
+The above code summarizes all census block SoVI data using the UHC, BI, and AA methods at buffers of 1000, 2000, 3000, 4000, and 5000m. 
+
+```{r}
+head(sovi_npls)
+```
+

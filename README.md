@@ -46,12 +46,17 @@ To regenerate output, simply delete the relevant files and re-run `runall.sh`.
 
 ---
 
-#### Notes:
+#### Rocker notes:
+
+- Rocker notes:
+    * Instantiate container with: `sudo docker run -d -p 8787:8787 rocker/geospatial:3.4.2`
+        * Uses the `rocker/geospatial:3.4.2` image as a base container, with additional libraries (`tidyverse`, etc.) installed as needed
+    * Instantiating the container and running the code (including data downloads) should make the code wholly-reproducible
+    * Needed to configure email and name (local not global) via a bash connection to the container to push to GitHub
+
+---
+
+#### Random notes:
 
 - NPL site listed as in NC yet falls geographically in TN (site_id: 0409895)
 
-- Rocker notes:
-    * instantiate container with: `sudo docker run -d -p 8787:8787 rocker/geospatial:3.4.2`
-    * uses the `rocker/geospatial:3.4.2` image as a base container, with additional libraries (`tidyverse`, etc.) installed as needed
-    * instantiating the container and running the code (including data downloads) should make the code wholly-reproducible
-    * needed to configure git email and name locally to push
